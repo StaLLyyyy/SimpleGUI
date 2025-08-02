@@ -1,0 +1,120 @@
+--[[
+    ================================================================
+    ==                                                            ==
+    ==                  Simple Lua UI Library                     ==
+    ==                                                            ==
+    ================================================================
+
+    --- QUICKSTART GUIDE ---
+
+    This library is designed to be hosted remotely and loaded on demand.
+
+    1. HOST THE LIBRARY:
+       Upload this entire file to a raw text hosting service (e.g., GitHub Gist, Pastebin).
+       Make sure you get the "raw" file URL.
+
+    2. LOAD IN YOUR SCRIPT:
+       Use the following code in your main script to load and initialize the library.
+
+       EXAMPLE SCRIPT:
+       ----------------------------------------------------------------
+       local GUI = nil
+
+       http.get("YOUR_RAW_URL_HERE", function(library_code)
+           if library_code then
+               local success, lib = pcall(loadstring(library_code))
+               if success and type(lib) == "table" then
+                   GUI = lib
+                   -- Library loaded. You can now create your windows.
+                   
+                   -- Example Window 1:
+                   local main_window = GUI:new_window("Main Menu", 100, 100, 250)
+                   local esp_enabled = main_window:add_checkbox("Enable ESP")
+                   local fov_slider = main_window:add_slider("FOV", 60, 120, 90)
+                   
+                   -- Example Window 2:
+                   local visuals_window = GUI:new_window("Visuals", 400, 100, 250)
+                   visuals_window:add_textinput("Watermark", "My Script")
+
+               else
+                   print("Failed to load UI Library:", lib) -- lib contains the error
+               end
+           else
+               print("Failed to fetch UI Library code.")
+           end
+       end)
+
+       local menu_toggle_key = 0x2D -- INSERT Key
+       local last_toggle_state = false
+
+       cheat.set_callback("paint", function()
+           if not GUI then return end -- Wait until library is loaded
+
+           -- Toggle menu visibility with your key
+           local key_state = utils.key_state(menu_toggle_key)
+           if key_state and not last_toggle_state then
+               for _, wnd in ipairs(GUI.windows) do
+                   wnd.open = not wnd.open
+               end
+           end
+           last_toggle_state = key_state
+
+           -- These two functions must be called every frame
+           GUI:update_keybinds()
+           GUI:draw()
+       end)
+       ----------------------------------------------------------------
+]]
+
+--================================================================
+-- EXAMPLE USAGE
+--================================================================
+
+-- 1. Create a window
+local main_window = GUI:new_window("Main Menu", 100, 100, 250)
+
+-- 2. Add controls and store them in variables
+local esp_enabled = main_window:add_checkbox("Enable ESP")
+local fov_slider = main_window:add_slider("FOV", 60, 120, 90)
+local esp_keybind = main_window:add_keybind("ESP Key", 0)
+local name_input = main_window:add_textinput("Player Name", "User123")
+
+-- 3. Add a button with a callback
+main_window:add_button("Reset FOV", function()
+    fov_slider.value = 90
+end)
+
+-- 4. Create a second window for demonstration
+local visuals_window = GUI:new_window("Visuals", 400, 100, 250)
+visuals_window:add_multiselect("Players", {"Boxes", "Names", "Health"})
+visuals_window:add_dropdown("Box Style", {"Corner", "Full"})
+
+
+-- 5. Main loop (callback)
+local menu_toggle_key = 0x2D -- INSERT Key
+local last_toggle_state = false
+
+cheat.set_callback("paint", function()
+    -- Update keybind states
+    GUI:update_keybinds()
+
+    -- Toggle menu visibility
+    local key_state = utils.key_state(menu_toggle_key)
+    if key_state and not last_toggle_state then
+        main_window.open = not main_window.open
+        visuals_window.open = not visuals_window.open
+    end
+    last_toggle_state = key_state
+
+    -- Draw all UI
+    GUI:draw()
+
+    -- Use values from the menu in your script's logic
+    if esp_enabled.value then
+        -- render.text(10, 10, "Hello, " .. name_input.value, 255, 255, 255, 255, "", 2)
+    end
+
+    if GUI:is_keybind_active(esp_keybind) then
+        -- render.text(...) -- your logic for when the keybind is active
+    end
+end)
