@@ -1,7 +1,7 @@
 --[[
     ================================================================
     ==                                                            ==
-    ==                  Simple Lua UI Library                     ==
+    ==                      Simple Lua UI Library                 ==
     ==                                                            ==
     ================================================================
 
@@ -10,58 +10,68 @@
     This library is designed to be hosted remotely and loaded on demand.
 
     1. HOST THE LIBRARY:
-       Upload this entire file to a raw text hosting service (e.g., GitHub Gist, Pastebin).
-       Make sure you get the "raw" file URL.
+        Upload this entire file to a raw text hosting service (e.g., GitHub Gist, Pastebin).
+        Make sure you get the "raw" file URL.
 
     2. LOAD IN YOUR SCRIPT:
-       Use the following code in your main script to load and initialize the library.
+        Use the following code in your main script to load and initialize the library.
 
-       EXAMPLE SCRIPT:
-       ----------------------------------------------------------------
-       local GUI = nil
+        EXAMPLE SCRIPT:
+        ----------------------------------------------------------------
+        local GUI = nil
 
-       http.get("https://raw.githubusercontent.com/StaLLyyyy/SimpleGUI/refs/heads/main/MainUiLib", function(library_code)
-           if library_code then
-               local success, lib = pcall(loadstring(library_code))
-               if success and type(lib) == "table" then
-                   GUI = lib
-                   -- Library loaded. You can now create your windows.
-                   
-                   -- Example Window 1:
-                   local main_window = GUI:new_window("Main Menu", 100, 100, 250)
-                   local esp_enabled = main_window:add_checkbox("Enable ESP")
-                   local fov_slider = main_window:add_slider("FOV", 60, 120, 90)
-                   
-                   -- Example Window 2:
-                   local visuals_window = GUI:new_window("Visuals", 400, 100, 250)
-                   visuals_window:add_textinput("Watermark", "My Script")
+        http.get("https://raw.githubusercontent.com/StaLLyyyy/SimpleGUI/refs/heads/main/MainUiLib", function(library_code)
+            if library_code then
+                local success, lib = pcall(loadstring(library_code))
+                if success and type(lib) == "table" then
+                    GUI = lib
+                    -- Library loaded. You can now create your windows.
+                    
+                    -- Example Window 1:
+                    local main_window = GUI:new_window("Main Menu", 100, 100, 250)
+                    local esp_enabled = main_window:add_checkbox("Enable ESP")
+                    local fov_slider = main_window:add_slider("FOV", 60, 120, 90)
+                    
+                    -- Example Window 2:
+                    local visuals_window = GUI:new_window("Visuals", 400, 100, 250)
+                    visuals_window:add_textinput("Watermark", "My Script")
 
-               else
-                   print("Failed to load UI Library:", lib) -- lib contains the error
-               end
-           else
-               print("Failed to fetch UI Library code.")
-           end
-       end)
+                else
+                    print("Failed to load UI Library:", lib) -- lib contains the error
+                end
+            else
+                print("Failed to fetch UI Library code.")
+            end
+        end)
 
-       local menu_toggle_key = 0x2D -- INSERT Key
-       local last_toggle_state = false
+        local menu_toggle_key = 0x2D -- INSERT Key
+        local last_toggle_state = false
 
-       cheat.set_callback("paint", function()
-           if not GUI then return end -- Wait until library is loaded
+        cheat.set_callback("paint", function()
+            if not GUI then return end -- Wait until library is loaded
 
-           -- Toggle menu visibility with your key
-           local key_state = utils.key_state(menu_toggle_key)
-           if key_state and not last_toggle_state then
-               for _, wnd in ipairs(GUI.windows) do
-                   wnd.open = not wnd.open
-               end
-           end
-           last_toggle_state = key_state
+            -- Toggle menu visibility with your key
+            local key_state = utils.key_state(menu_toggle_key)
+            if key_state and not last_toggle_state then
+                for _, wnd in ipairs(GUI.windows) do
+                    wnd.open = not wnd.open
+                end
+            end
+            last_toggle_state = key_state
 
-           -- These two functions must be called every frame
-           GUI:update_keybinds()
-           GUI:draw()
-       end)
-       ----------------------------------------------------------------
+            -- These two functions must be called every frame
+            GUI:update_keybinds()
+            GUI:draw()
+        end)
+        ----------------------------------------------------------------
+
+    Available Controls:
+    - window:add_checkbox("Name")
+    - window:add_slider("Name", min, max, default)
+    - window:add_button("Name", callback_function)
+    - window:add_keybind("Name", default_virtual_key)
+    - window:add_dropdown("Name", {"Item1", "Item2"})
+    - window:add_multiselect("Name", {"Item1", "Item2"})
+    - window:add_textinput("Name", "Default Text")
+    - window:add_colorpicker("Name", {r, g, b, a}) -- Values from 0-255
 ]]
