@@ -1,6 +1,6 @@
 local GUI = nil
 
-local library_url = "https://your.raw.url.here/guilibrary.lua" 
+local library_url = "https://raw.githubusercontent.com/StaLLyyyy/SimpleGUI/refs/heads/main/MainUiLib" 
 
 http.get(library_url, function(library_code, success, headers)
     if success and library_code then
