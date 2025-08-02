@@ -572,8 +572,8 @@ function GUI:draw()
         render.rect(wnd.x + 1, wnd.y + 1, wnd.w - 2, 24, 40, 40, 40, 255)
         render.line(wnd.x, wnd.y + 25, wnd.x + wnd.w, wnd.y + 25, 60, 60, 60, 255, 1)
 
-        local title_size = render.measure_text(wnd.title, 2)
-        render.text(wnd.x + (wnd.w - title_size.x) / 2, wnd.y + 5, wnd.title, 255, 255, 255, 255, "", 2)
+        local title_size = render.measure_text(wnd.title or "", 2)
+        render.text(wnd.x + (wnd.w - title_size.x) / 2, wnd.y + 5, wnd.title or "", 255, 255, 255, 255, "", 2)
 
         local arrow_x, arrow_y = wnd.x + 10, wnd.y + 8
         render.triangle(arrow_x, arrow_y + (wnd.collapsed and 0 or 8), arrow_x + (wnd.collapsed and 0 or 8), arrow_y + (wnd.collapsed and 8 or 8), arrow_x + 4, arrow_y + (wnd.collapsed and 4 or 0), 200, 200, 200, 255)
@@ -590,8 +590,8 @@ function GUI:draw()
                     if self:is_mouse_in(tab_x, offset_y, tab_w, 25) and self.input.lmb_clicked then
                         wnd.active_tab = i
                     end
-                    local text_size = render.measure_text(tab.name, 2)
-                    render.text(tab_x + (tab_w - text_size.x) / 2, offset_y + 5, tab.name, i == wnd.active_tab and 255 or 150, i == wnd.active_tab and 255 or 150, i == wnd.active_tab and 255 or 150, 255, "", 2)
+                    local text_size = render.measure_text(tab.name or "", 2)
+                    render.text(tab_x + (tab_w - text_size.x) / 2, offset_y + 5, tab.name or "", i == wnd.active_tab and 255 or 150, i == wnd.active_tab and 255 or 150, i == wnd.active_tab and 255 or 150, 255, "", 2)
                 end
                 offset_y = offset_y + 30
             end
@@ -635,8 +635,8 @@ function GUI:draw()
                 if self.input.lmb_clicked then ctrl.mode = j; ctrl.context_open = false end
             end
             local r, g, b = (j == ctrl.mode) and 150 or 220, (j == ctrl.mode) and 150 or 220, (j == ctrl.mode) and 255 or 220
-            local mode_text_size = render.measure_text(mode_name, 2)
-            render.text(context_x + (context_w - mode_text_size.x) / 2, item_y, mode_name, r, g, b, 255, "", 2)
+            local mode_text_size = render.measure_text(mode_name or "", 2)
+            render.text(context_x + (context_w - mode_text_size.x) / 2, item_y, mode_name or "", r, g, b, 255, "", 2)
         end
         if self.input.lmb_clicked and not self:is_mouse_in(context_x, context_y, context_w, context_h) then ctrl.context_open = false end
     end
@@ -744,9 +744,9 @@ function GUI:draw_control(wnd, ctrl, offset_y)
     if ctrl.type == "layout_start" then
         ctrl.layout.start_y = offset_y
         render.rect_outline(ctrl_x - 5, offset_y, ctrl_w + 10, 100, 60, 60, 60, 255, 0, 1)
-        local text_size = render.measure_text(ctrl.layout.name, 2)
+        local text_size = render.measure_text(ctrl.layout.name or "", 2)
         render.rect(ctrl_x + 5, offset_y - 8, text_size.x + 10, 16, 25, 25, 25, 255)
-        render.text(ctrl_x + 10, offset_y - 7, ctrl.layout.name, 220, 220, 220, 255, "", 2)
+        render.text(ctrl_x + 10, offset_y - 7, ctrl.layout.name or "", 220, 220, 220, 255, "", 2)
         return offset_y + 25
     elseif ctrl.type == "layout_end" then
         if layout then
@@ -757,7 +757,7 @@ function GUI:draw_control(wnd, ctrl, offset_y)
     end
 
     if ctrl.type == "checkbox" then
-        render.text(ctrl_x, offset_y, ctrl.name, 220, 220, 220, 255, "", 2)
+        render.text(ctrl_x, offset_y, ctrl.name or "", 220, 220, 220, 255, "", 2)
         local box_x = ctrl_x + ctrl_w - 15
         render.rect_outline(box_x, offset_y, 15, 15, 60, 60, 60, 255, 0, 1)
         if ctrl.value then render.rect(box_x + 3, offset_y + 3, 9, 9, 150, 150, 255, 255) end
@@ -766,14 +766,14 @@ function GUI:draw_control(wnd, ctrl, offset_y)
 
     elseif ctrl.type == "button" then
         render.rect(ctrl_x, offset_y, ctrl_w, 20, 50, 50, 50, 255)
-        local text_size = render.measure_text(ctrl.name, 2)
-        render.text(ctrl_x + (ctrl_w - text_size.x) / 2, offset_y + 2, ctrl.name, 220, 220, 220, 255, "", 2)
+        local text_size = render.measure_text(ctrl.name or "", 2)
+        render.text(ctrl_x + (ctrl_w - text_size.x) / 2, offset_y + 2, ctrl.name or "", 220, 220, 220, 255, "", 2)
         if self.input.lmb_clicked and self:is_mouse_in(ctrl_x, offset_y, ctrl_w, 20) then ctrl.callback() end
         return offset_y + 30
 
     elseif ctrl.type == "keybind" then
         ctrl.render_y = offset_y
-        render.text(ctrl_x, offset_y, ctrl.name, 220, 220, 220, 255, "", 2)
+        render.text(ctrl_x, offset_y, ctrl.name or "", 220, 220, 220, 255, "", 2)
         local mode_char = string.sub(ctrl.modes[ctrl.mode], 1, 1)
         local text = ctrl.listening and "..." or string.format("[%s] (%s)", self:get_key_name(ctrl.key), mode_char)
         local text_size = render.measure_text(text, 2)
@@ -803,7 +803,7 @@ function GUI:draw_control(wnd, ctrl, offset_y)
             self:draw_text_field(ctrl, "edit_value", box_x, offset_y - 2, box_w, 18)
         else
             local formatted_value = (ctrl.value == math.floor(ctrl.value)) and tostring(math.floor(ctrl.value)) or string.format("%.2f", ctrl.value)
-            render.text(ctrl_x, offset_y, string.format("%s: %s", ctrl.name, formatted_value), 220, 220, 220, 255, "", 2)
+            render.text(ctrl_x, offset_y, string.format("%s: %s", ctrl.name or "", formatted_value), 220, 220, 220, 255, "", 2)
         end
         local slider_y = offset_y + 18
         render.rect(ctrl_x, slider_y, ctrl_w, 5, 50, 50, 50, 255)
@@ -812,7 +812,7 @@ function GUI:draw_control(wnd, ctrl, offset_y)
         return offset_y + 35
 
     elseif ctrl.type == "colorpicker" then
-        render.text(ctrl_x, offset_y, ctrl.name, 220, 220, 220, 255, "", 2)
+        render.text(ctrl_x, offset_y, ctrl.name or "", 220, 220, 220, 255, "", 2)
         local box_x, box_y, box_w, box_h = ctrl_x + ctrl_w - 40, offset_y, 40, 20
         render.rect(box_x, box_y, box_w, box_h, ctrl.value.r, ctrl.value.g, ctrl.value.b, ctrl.value.a)
         render.rect_outline(box_x, box_y, box_w, box_h, 60, 60, 60, 255, 0, 1)
@@ -824,7 +824,7 @@ function GUI:draw_control(wnd, ctrl, offset_y)
         return offset_y + 25
 
     elseif ctrl.type == "dropdown" or ctrl.type == "multiselect" then
-        render.text(ctrl_x, offset_y, ctrl.name, 220, 220, 220, 255, "", 2)
+        render.text(ctrl_x, offset_y, ctrl.name or "", 220, 220, 220, 255, "", 2)
         local box_x, box_y, box_w, box_h = ctrl_x, offset_y + 15, ctrl_w, 20
         render.rect(box_x, box_y, box_w, box_h, 50, 50, 50, 255)
         render.rect_outline(box_x, box_y, box_w, box_h, 60, 60, 60, 255, 0, 1)
@@ -863,13 +863,13 @@ function GUI:draw_control(wnd, ctrl, offset_y)
         return new_offset_y
 
     elseif ctrl.type == "textinput" then
-        render.text(ctrl_x, offset_y, ctrl.name, 220, 220, 220, 255, "", 2)
+        render.text(ctrl_x, offset_y, ctrl.name or "", 220, 220, 220, 255, "", 2)
         local box_x, box_y, box_w, box_h = ctrl_x, offset_y + 15, ctrl_w, 20
         self:draw_text_field(ctrl, "value", box_x, box_y, box_w, box_h)
         return offset_y + 45
     
     elseif ctrl.type == "label" then
-        render.text(ctrl_x, offset_y, ctrl.name, 220, 220, 220, 255, "", 2)
+        render.text(ctrl_x, offset_y, ctrl.name or "", 220, 220, 220, 255, "", 2)
         return offset_y + 20
         
     elseif ctrl.type == "separator" then
