@@ -1,3 +1,98 @@
+--[[
+    ================================================================
+    ==                                                            ==
+    ==                   Simple Lua UI Library                    ==
+    ==                                                            ==
+    ================================================================
+
+    --- QUICK START GUIDE ---
+
+    This library is designed to be hosted on a remote server and downloaded on demand.
+
+    1. PLACE THE LIBRARY:
+        Upload this file to a raw text hosting service (for example, GitHub Gist, Pastebin).
+        Make sure you get the "raw" URL of the file (a direct link to the text).
+
+    2. UPLOAD IN YOUR SCRIPT:
+        Use the following code in your main script to load and initialize the library.
+        It has become more reliable and now outputs detailed errors if something goes wrong.
+
+        SCRIPT EXAMPLE:
+        ----------------------------------------------------------------
+        local GUI = nil
+
+        -- The URL where your library is located. Make sure that this is a DIRECT (RAW) link.
+        local library_url = "https://raw.githubusercontent.com/StaLLyyyy/SimpleGUI/refs/heads/main/MainUiLib " -- Replace it with your URL
+
+        http.get(library_url, function(library_code, success, headers)
+            -- We check that the code has been successfully received
+            if success and library_code then
+                -- Download the library code safely
+                local loaded_ok, lib_or_err = pcall(loadstring(library_code))
+                
+                if loaded_ok and type(lib_or_err) == "table" then
+                    GUI = lib_or_err
+                    print("UI Library loaded successfully!")
+                    
+                    -- The library is loaded. Now you can create windows.
+                    
+                    -- Example of Window 1:
+local main_hindow = GUI:new_hindow("Main Menu", 100, 100, 250)
+local esp_enabled = main_hindow:add_checkbox("Enable ESP")
+local fov_slider = main_hindow:add_slider("Field of View (FOV)", 60, 120, 90)
+                    main_window:add_button("Click me", function() print("The button is pressed!") end)
+
+                    -- Example Window 2:
+local visuals_hwindow = GUI:new_hwindow("Visuals", 400, 100, 250)
+visuals_hwindow:add_textinput("Watermark", "My Script")
+visuals_hwindow:add_colorpicker("ESP Color", {255, 0, 0, 255})
+
+                else
+-- Error when executing the library code
+                    print("Error loading UI Library:", lib_or_err)
+end
+            else
+                -- Error when receiving the code from the server
+                print("Couldn't get the UI Library code. Check the URL and your internet connection.")
+print("HTTP status:", headers and headers.status)
+            end
+        end)
+
+        -- Key to open/close the menu (0x2D = Insert)
+        local menu_toggle_key = 0x2D
+        local last_toggle_state = false
+        local menu_open = true
+
+        cheat.set_callback("paint", function()
+-- Waiting until the library is fully loaded
+            if not GUI then return end 
+
+            -- Switch menu visibility by key
+            local key_state = utils.key_state(menu_toggle_key)
+            if key_state and not last_toggle_state then
+                menu_open = not menu_open
+                for _, wnd in ipairs(GUI.windows) do
+                    wnd.open = menu_open
+                end
+            end
+            last_toggle_state = key_state
+
+            -- These two functions should be called every frame.
+            GUI:update_keybinds()
+            GUI:draw()
+        end)
+        ----------------------------------------------------------------
+
+    Available controls:
+    - window:add_checkbox("Name")
+- window:add_slider("Name", min, max, default)
+- window:add_button("Name", callback_function)
+    - window:add_keybind("Name", default_virtual_key)
+- window:add_dropdown("Name", {"Element1", "Element2"})
+- window:add_multiselect("Name", {"Element1", "Element2"})
+- window:add_textinput("Name", "Text by default")
+- window:add_colorpicker("Name", {r, g, b, a}) -- Values from 0 to 255
+]]
 local GUI = {
     windows = {},
     active_control = nil,
@@ -557,12 +652,16 @@ function GUI:draw()
         wnd.target_h = wnd.collapsed and 25 or calculated_h
         wnd.current_h = self:lerp(wnd.current_h, wnd.target_h, wnd.animation_speed)
 
-        -- Multi-layer border
+        -- ================================================================
+        -- УЛУЧШЕННАЯ МНОГОСЛОЙНАЯ РАМКА
+        -- ================================================================
+        -- Внешняя темная рамка для эффекта тени
         render.rect_outline(wnd.x - 1, wnd.y - 1, wnd.w + 2, wnd.current_h + 2, 10, 10, 10, 255, 0, 1)
+        -- Основной фон окна
+        render.rect(wnd.x, wnd.y, wnd.w, wnd.current_h, 25, 25, 25, 255)
+        -- Внутренняя обводка для создания глубины
         render.rect_outline(wnd.x, wnd.y, wnd.w, wnd.current_h, 60, 60, 60, 255, 0, 1)
-
-        -- Background
-        render.rect(wnd.x + 1, wnd.y + 1, wnd.w - 2, wnd.current_h - 2, 25, 25, 25, 255)
+        -- ================================================================
         
         -- Title bar
         render.rect(wnd.x + 1, wnd.y + 1, wnd.w - 2, 24, 40, 40, 40, 255)
