@@ -1,100 +1,10 @@
---[[
-    ================================================================
-    ==                                                            ==
-    ==                   Simple Lua UI Library                    ==
-    ==                                                            ==
-    ================================================================
-
-    --- QUICK START GUIDE ---
-
-    This library is designed to be hosted on a remote server and downloaded on demand.
-
-    1. PLACE THE LIBRARY:
-        Upload this file to a raw text hosting service (for example, GitHub Gist, Pastebin).
-        Make sure you get the "raw" URL of the file (a direct link to the text).
-
-    2. UPLOAD IN YOUR SCRIPT:
-        Use the following code in your main script to load and initialize the library.
-        It has become more reliable and now outputs detailed errors if something goes wrong.
-
-        SCRIPT EXAMPLE:
-        ----------------------------------------------------------------
-        local GUI = nil
-
-        -- The URL where your library is located. Make sure that this is a DIRECT (RAW) link.
-        local library_url = "https://raw.githubusercontent.com/StaLLyyyy/SimpleGUI/refs/heads/main/MainUiLib " -- Replace it with your URL
-
-        http.get(library_url, function(library_code, success, headers)
-            -- We check that the code has been successfully received
-            if success and library_code then
-                -- Download the library code safely
-                local loaded_ok, lib_or_err = pcall(loadstring(library_code))
-                
-                if loaded_ok and type(lib_or_err) == "table" then
-                    GUI = lib_or_err
-                    print("UI Library loaded successfully!")
-                    
-                    -- The library is loaded. Now you can create windows.
-                    
-                    -- Example of Window 1:
-local main_hindow = GUI:new_hindow("Main Menu", 100, 100, 250)
-local esp_enabled = main_hindow:add_checkbox("Enable ESP")
-local fov_slider = main_hindow:add_slider("Field of View (FOV)", 60, 120, 90)
-                    main_window:add_button("Click me", function() print("The button is pressed!") end)
-
-                    -- Example Window 2:
-local visuals_hwindow = GUI:new_hwindow("Visuals", 400, 100, 250)
-visuals_hwindow:add_textinput("Watermark", "My Script")
-visuals_hwindow:add_colorpicker("ESP Color", {255, 0, 0, 255})
-
-                else
--- Error when executing the library code
-                    print("Error loading UI Library:", lib_or_err)
-end
-            else
-                -- Error when receiving the code from the server
-                print("Couldn't get the UI Library code. Check the URL and your internet connection.")
-print("HTTP status:", headers and headers.status)
-            end
-        end)
-
-        -- Key to open/close the menu (0x2D = Insert)
-        local menu_toggle_key = 0x2D
-        local last_toggle_state = false
-        local menu_open = true
-
-        cheat.set_callback("paint", function()
--- Waiting until the library is fully loaded
-            if not GUI then return end 
-
-            -- Switch menu visibility by key
-            local key_state = utils.key_state(menu_toggle_key)
-            if key_state and not last_toggle_state then
-                menu_open = not menu_open
-                for _, wnd in ipairs(GUI.windows) do
-                    wnd.open = menu_open
-                end
-            end
-            last_toggle_state = key_state
-
-            -- These two functions should be called every frame.
-            GUI:update_keybinds()
-            GUI:draw()
-        end)
-        ----------------------------------------------------------------
-
-    Available controls:
-    - window:add_checkbox("Name")
-- window:add_slider("Name", min, max, default)
-- window:add_button("Name", callback_function)
-    - window:add_keybind("Name", default_virtual_key)
-- window:add_dropdown("Name", {"Element1", "Element2"})
-- window:add_multiselect("Name", {"Element1", "Element2"})
-- window:add_textinput("Name", "Text by default")
-- window:add_colorpicker("Name", {r, g, b, a}) -- Values from 0 to 255
-]]
+-- ================================================================
+-- GUI Library Core v3.0
+-- By Gemini
+-- ================================================================
 local GUI = {
     windows = {},
+    notifications = {},
     active_control = nil,
     focused_control = nil,
     dragging_control = nil,
@@ -113,54 +23,30 @@ local GUI = {
     key_repeat_delay = 0.4,
     key_repeat_rate = 0.04,
     key_map = {
-        [0x30] = { normal = "0", shifted = ")" },
-        [0x31] = { normal = "1", shifted = "!" },
-        [0x32] = { normal = "2", shifted = "@" },
-        [0x33] = { normal = "3", shifted = "#" },
-        [0x34] = { normal = "4", shifted = "$" },
-        [0x35] = { normal = "5", shifted = "%" },
-        [0x36] = { normal = "6", shifted = "^" },
-        [0x37] = { normal = "7", shifted = "&" },
-        [0x38] = { normal = "8", shifted = "*" },
-        [0x39] = { normal = "9", shifted = "(" },
-        [0x41] = { normal = "a", shifted = "A" },
-        [0x42] = { normal = "b", shifted = "B" },
-        [0x43] = { normal = "c", shifted = "C" },
-        [0x44] = { normal = "d", shifted = "D" },
-        [0x45] = { normal = "e", shifted = "E" },
-        [0x46] = { normal = "f", shifted = "F" },
-        [0x47] = { normal = "g", shifted = "G" },
-        [0x48] = { normal = "h", shifted = "H" },
-        [0x49] = { normal = "i", shifted = "I" },
-        [0x4A] = { normal = "j", shifted = "J" },
-        [0x4B] = { normal = "k", shifted = "K" },
-        [0x4C] = { normal = "l", shifted = "L" },
-        [0x4D] = { normal = "m", shifted = "M" },
-        [0x4E] = { normal = "n", shifted = "N" },
-        [0x4F] = { normal = "o", shifted = "O" },
-        [0x50] = { normal = "p", shifted = "P" },
-        [0x51] = { normal = "q", shifted = "Q" },
-        [0x52] = { normal = "r", shifted = "R" },
-        [0x53] = { normal = "s", shifted = "S" },
-        [0x54] = { normal = "t", shifted = "T" },
-        [0x55] = { normal = "u", shifted = "U" },
-        [0x56] = { normal = "v", shifted = "V" },
-        [0x57] = { normal = "w", shifted = "W" },
-        [0x58] = { normal = "x", shifted = "X" },
-        [0x59] = { normal = "y", shifted = "Y" },
-        [0x5A] = { normal = "z", shifted = "Z" },
-        [0xBA] = { normal = ";", shifted = ":" },
-        [0xBB] = { normal = "=", shifted = "+" },
-        [0xBC] = { normal = ",", shifted = "<" },
-        [0xBD] = { normal = "-", shifted = "_" },
-        [0xBE] = { normal = ".", shifted = ">" },
-        [0xBF] = { normal = "/", shifted = "?" },
-        [0xC0] = { normal = "`", shifted = "~" },
-        [0xDB] = { normal = "[", shifted = "{" },
-        [0xDC] = { normal = "\\", shifted = "|" },
-        [0xDD] = { normal = "]", shifted = "}" },
-        [0xDE] = { normal = "'", shifted = '"' },
-        [0x20] = { normal = " ", shifted = " " },
+        [0x30] = { normal = "0", shifted = ")" }, [0x31] = { normal = "1", shifted = "!" },
+        [0x32] = { normal = "2", shifted = "@" }, [0x33] = { normal = "3", shifted = "#" },
+        [0x34] = { normal = "4", shifted = "$" }, [0x35] = { normal = "5", shifted = "%" },
+        [0x36] = { normal = "6", shifted = "^" }, [0x37] = { normal = "7", shifted = "&" },
+        [0x38] = { normal = "8", shifted = "*" }, [0x39] = { normal = "9", shifted = "(" },
+        [0x41] = { normal = "a", shifted = "A" }, [0x42] = { normal = "b", shifted = "B" },
+        [0x43] = { normal = "c", shifted = "C" }, [0x44] = { normal = "d", shifted = "D" },
+        [0x45] = { normal = "e", shifted = "E" }, [0x46] = { normal = "f", shifted = "F" },
+        [0x47] = { normal = "g", shifted = "G" }, [0x48] = { normal = "h", shifted = "H" },
+        [0x49] = { normal = "i", shifted = "I" }, [0x4A] = { normal = "j", shifted = "J" },
+        [0x4B] = { normal = "k", shifted = "K" }, [0x4C] = { normal = "l", shifted = "L" },
+        [0x4D] = { normal = "m", shifted = "M" }, [0x4E] = { normal = "n", shifted = "N" },
+        [0x4F] = { normal = "o", shifted = "O" }, [0x50] = { normal = "p", shifted = "P" },
+        [0x51] = { normal = "q", shifted = "Q" }, [0x52] = { normal = "r", shifted = "R" },
+        [0x53] = { normal = "s", shifted = "S" }, [0x54] = { normal = "t", shifted = "T" },
+        [0x55] = { normal = "u", shifted = "U" }, [0x56] = { normal = "v", shifted = "V" },
+        [0x57] = { normal = "w", shifted = "W" }, [0x58] = { normal = "x", shifted = "X" },
+        [0x59] = { normal = "y", shifted = "Y" }, [0x5A] = { normal = "z", shifted = "Z" },
+        [0xBA] = { normal = ";", shifted = ":" }, [0xBB] = { normal = "=", shifted = "+" },
+        [0xBC] = { normal = ",", shifted = "<" }, [0xBD] = { normal = "-", shifted = "_" },
+        [0xBE] = { normal = ".", shifted = ">" }, [0xBF] = { normal = "/", shifted = "?" },
+        [0xC0] = { normal = "`", shifted = "~" }, [0xDB] = { normal = "[", shifted = "{" },
+        [0xDC] = { normal = "\\", shifted = "|" },[0xDD] = { normal = "]", shifted = "}" },
+        [0xDE] = { normal = "'", shifted = '"' }, [0x20] = { normal = " ", shifted = " " },
         [0x60]="0",[0x61]="1",[0x62]="2",[0x63]="3",[0x64]="4",[0x65]="5",[0x66]="6",[0x67]="7",[0x68]="8",[0x69]="9",
         [0x6A]="*",[0x6B]="+",[0x6D]="-",[0x6E]=".",[0x6F]="/"
     }
@@ -221,7 +107,7 @@ function GUI:get_char_index_from_mouse_pos(text, relative_x)
 end
 
 --================================================================
--- TEXTINPUT & COLORPICKER HELPER FUNCTIONS
+-- TEXT AND COLOR HELPER FUNCTIONS
 --================================================================
 
 function GUI:record_textinput_state(ctrl)
@@ -280,12 +166,13 @@ function GUI:delete_selection(ctrl)
 end
 
 function GUI:hsv_to_rgb(h, s, v)
+    if s == 0 then return v * 255, v * 255, v * 255 end
     local r, g, b
     local i = math.floor(h * 6)
     local f = h * 6 - i
     local p = v * (1 - s)
-    local q = v * (1 - f * s)
-    local t = v * (1 - (1 - f) * s)
+    local q = v * (1 - s * f)
+    local t = v * (1 - s * (1 - f))
     i = i % 6
     if i == 0 then r, g, b = v, t, p
     elseif i == 1 then r, g, b = q, v, p
@@ -311,139 +198,158 @@ function GUI:rgb_to_hsv(r, g, b)
     return h, s, v
 end
 
+function GUI:rgb_to_hex(r, g, b)
+    r, g, b = math.floor(r), math.floor(g), math.floor(b)
+    return string.format("#%02X%02X%02X", r, g, b)
+end
+
 --================================================================
 -- PUBLIC LIBRARY API
 --================================================================
 
 function GUI:new_window(title, x, y, w)
     local window = {
-        title = title,
-        x = x,
-        y = y,
-        w = w,
-        open = true,
-        controls = {},
-        dragging = false,
-        drag_offset = {x=0, y=0},
-        collapsed = false,
-        animation_speed = 0.15,
-        current_h = 300,
-        target_h = 300
+        title = title, x = x, y = y, w = w, open = true,
+        dragging = false, drag_offset = {x=0, y=0},
+        collapsed = false, animation_speed = 0.15,
+        current_h = 300, target_h = 300,
+        tabs = {}, active_tab = 1,
+        layout_stack = {}
     }
+
+    function window:get_current_tab()
+        return self.tabs[self.active_tab]
+    end
+
+    function window:add_tab(name)
+        local tab = { name = name, controls = {} }
+        table.insert(self.tabs, tab)
+        return tab
+    end
+    
+    local function add_control(ctrl)
+        local tab = window:get_current_tab()
+        if not tab then
+            print("Error: No tab selected. Please add a tab first using window:add_tab(name).")
+            return
+        end
+        table.insert(tab.controls, ctrl)
+        return ctrl
+    end
 
     function window:add_checkbox(name)
         GUI.control_counter = (GUI.control_counter or 0) + 1
-        local ctrl = {type = "checkbox", name = name, value = false, id = GUI.control_counter}
-        table.insert(self.controls, ctrl)
-        return ctrl
+        return add_control({type = "checkbox", name = name, value = false, id = GUI.control_counter})
     end
 
     function window:add_slider(name, min, max, default)
         GUI.control_counter = (GUI.control_counter or 0) + 1
         local val = default or min
         local initial_state = { value = tostring(val), cursor_pos = #tostring(val), selection_anchor = nil }
-        local ctrl = {
-            type = "slider",
-            name = name,
-            min = min,
-            max = max,
-            value = val,
-            is_editing = false,
-            edit_value = tostring(val),
-            cursor_pos = 0,
-            last_caret_toggle = 0,
-            caret_visible = true,
-            selection_anchor = nil,
-            is_selecting_with_mouse = false,
-            text_offset = 0,
-            history = { initial_state },
-            history_index = 1,
-            id = GUI.control_counter
-        }
-        table.insert(self.controls, ctrl)
-        return ctrl
+        return add_control({
+            type = "slider", name = name, min = min, max = max, value = val,
+            is_editing = false, edit_value = tostring(val), cursor_pos = 0,
+            last_caret_toggle = 0, caret_visible = true, selection_anchor = nil,
+            is_selecting_with_mouse = false, text_offset = 0,
+            history = { initial_state }, history_index = 1, id = GUI.control_counter
+        })
     end
 
     function window:add_button(name, callback)
         GUI.control_counter = (GUI.control_counter or 0) + 1
-        local ctrl = {type = "button", name = name, callback = callback or function() end, id = GUI.control_counter}
-        table.insert(self.controls, ctrl)
-        return ctrl
+        return add_control({type = "button", name = name, callback = callback or function() end, id = GUI.control_counter})
     end
 
     function window:add_keybind(name, default_key)
         GUI.control_counter = (GUI.control_counter or 0) + 1
-        local ctrl = {
-            type = "keybind",
-            name = name,
-            key = default_key or 0,
-            listening = false,
-            mode = 2,
-            modes = {"Toggle", "Hold", "Always"},
-            context_open = false,
-            render_y = 0,
-            toggled = false,
-            last_state = false,
-            listen_start_time = 0,
-            id = GUI.control_counter
-        }
-        table.insert(self.controls, ctrl)
-        return ctrl
+        return add_control({
+            type = "keybind", name = name, key = default_key or 0,
+            listening = false, mode = 2, modes = {"Toggle", "Hold", "Always"},
+            context_open = false, render_y = 0, toggled = false,
+            last_state = false, listen_start_time = 0, id = GUI.control_counter
+        })
     end
 
     function window:add_dropdown(name, items)
         GUI.control_counter = (GUI.control_counter or 0) + 1
-        local ctrl = {type = "dropdown", name = name, items = items, selected = 1, open = false, id = GUI.control_counter}
-        table.insert(self.controls, ctrl)
-        return ctrl
+        return add_control({type = "dropdown", name = name, items = items, selected = 1, open = false, id = GUI.control_counter})
     end
 
     function window:add_multiselect(name, items)
         GUI.control_counter = (GUI.control_counter or 0) + 1
         local selected = {}
         for i = 1, #items do selected[i] = false end
-        local ctrl = {type = "multiselect", name = name, items = items, selected = selected, open = false, id = GUI.control_counter}
-        table.insert(self.controls, ctrl)
-        return ctrl
+        return add_control({type = "multiselect", name = name, items = items, selected = selected, open = false, id = GUI.control_counter})
     end
 
     function window:add_textinput(name, default_text)
         GUI.control_counter = (GUI.control_counter or 0) + 1
         local text = default_text or ""
         local initial_state = { value = text, cursor_pos = #text, selection_anchor = nil }
-        local ctrl = {
-            type = "textinput",
-            name = name,
-            value = text,
-            cursor_pos = #text,
-            last_caret_toggle = 0,
-            caret_visible = true,
-            selection_anchor = nil,
-            is_selecting_with_mouse = false,
-            history = { initial_state },
-            history_index = 1,
-            text_offset = 0,
-            id = GUI.control_counter
-        }
-        table.insert(self.controls, ctrl)
-        return ctrl
+        return add_control({
+            type = "textinput", name = name, value = text, cursor_pos = #text,
+            last_caret_toggle = 0, caret_visible = true, selection_anchor = nil,
+            is_selecting_with_mouse = false, history = { initial_state },
+            history_index = 1, text_offset = 0, id = GUI.control_counter
+        })
     end
 
     function window:add_colorpicker(name, default_color)
         GUI.control_counter = (GUI.control_counter or 0) + 1
         local r, g, b, a = default_color[1], default_color[2], default_color[3], default_color[4]
         local h, s, v = GUI:rgb_to_hsv(r, g, b)
-        local ctrl = {type = "colorpicker", name = name, value = {r=r, g=g, b=b, a=a}, h=h, s=s, v=v, open = false, id = GUI.control_counter}
-        table.insert(self.controls, ctrl)
+        local ctrl = add_control({
+            type = "colorpicker", name = name, value = {r=r, g=g, b=b, a=a},
+            h=h, s=s, v=v, open = false, id = GUI.control_counter
+        })
         return ctrl.value
     end
 
+    function window:add_label(name)
+        return add_control({type="label", name=name})
+    end
+
+    function window:add_separator()
+        return add_control({type="separator"})
+    end
+
+    function window:begin_groupbox(name)
+        local layout = {type="groupbox", name=name, start_y = 0}
+        table.insert(self.layout_stack, layout)
+        add_control({type="layout_start", layout=layout})
+    end
+
+    function window:end_groupbox()
+        local layout = table.remove(self.layout_stack)
+        add_control({type="layout_end", layout=layout})
+    end
+    
+    function window:begin_columns(count)
+        local layout = {type="columns", count=count or 2, current=1, start_y=0, column_max_y={}}
+        table.insert(self.layout_stack, layout)
+        add_control({type="layout_start", layout=layout})
+    end
+
+    function window:next_column()
+        add_control({type="layout_next"})
+    end
+
+    function window:end_columns()
+        local layout = table.remove(self.layout_stack)
+        add_control({type="layout_end", layout=layout})
+    end
+    
     table.insert(self.windows, window)
     return window
 end
 
+function GUI:add_notification(text, n_type)
+    table.insert(self.notifications, 1, {text = text, type = n_type or "info", time = globals.curtime(), alpha = 0, target_alpha = 1})
+    if #self.notifications > 5 then table.remove(self.notifications) end
+end
+
 function GUI:is_keybind_active(ctrl)
-    if ctrl.key == 0 then return false end
+    if not ctrl or ctrl.key == 0 then return false end
     if ctrl.mode == 1 then -- Toggle
         return ctrl.toggled
     elseif ctrl.mode == 2 then -- Hold
@@ -456,13 +362,15 @@ end
 
 function GUI:update_keybinds()
     for _, wnd in ipairs(self.windows) do
-        for _, ctrl in ipairs(wnd.controls) do
-            if ctrl.type == "keybind" then
-                local key_state = utils.key_state(ctrl.key)
-                if ctrl.mode == 1 and key_state and not ctrl.last_state then -- Toggle
-                    ctrl.toggled = not ctrl.toggled
+        for _, tab in ipairs(wnd.tabs) do
+            for _, ctrl in ipairs(tab.controls) do
+                if ctrl.type == "keybind" then
+                    local key_state = utils.key_state(ctrl.key)
+                    if ctrl.mode == 1 and key_state and not ctrl.last_state then -- Toggle
+                        ctrl.toggled = not ctrl.toggled
+                    end
+                    ctrl.last_state = key_state
                 end
-                ctrl.last_state = key_state
             end
         end
     end
@@ -635,35 +543,36 @@ function GUI:draw()
         if self.input.lmb_clicked and self:is_mouse_in(wnd.x + 5, wnd.y + 5, 15, 15) then
             wnd.collapsed = not wnd.collapsed
             if self.active_control then self.active_control.open = false; self.active_control = nil end
-            for _, c in ipairs(wnd.controls) do if c.context_open then c.context_open = false end end
+            if wnd:get_current_tab() then
+                for _, c in ipairs(wnd:get_current_tab().controls) do if c.context_open then c.context_open = false end end
+            end
         end
 
-        local calculated_h = 35
-        for _, ctrl in ipairs(wnd.controls) do
-            if ctrl.type == "button" then calculated_h = calculated_h + 30
-            elseif ctrl.type == "slider" then calculated_h = calculated_h + 35
-            elseif ctrl.type == "textinput" then calculated_h = calculated_h + 45
-            elseif ctrl.type == "colorpicker" then calculated_h = calculated_h + 25
-            elseif ctrl.type == "dropdown" or ctrl.type == "multiselect" then
-                calculated_h = calculated_h + 45
-                if ctrl.open then calculated_h = calculated_h + #ctrl.items * 20 end
-            else calculated_h = calculated_h + 25 end
+        local calculated_h = 35 + (#wnd.tabs > 0 and 30 or 0)
+        if wnd:get_current_tab() then
+            -- This is a simplified height calculation. A more robust solution would be to calculate during the draw pass.
+            for _, ctrl in ipairs(wnd:get_current_tab().controls) do
+                if ctrl.type == "button" then calculated_h = calculated_h + 30
+                elseif ctrl.type == "slider" then calculated_h = calculated_h + 35
+                elseif ctrl.type == "textinput" then calculated_h = calculated_h + 45
+                elseif ctrl.type == "colorpicker" then calculated_h = calculated_h + 25
+                elseif ctrl.type == "dropdown" or ctrl.type == "multiselect" then
+                    calculated_h = calculated_h + 45
+                    if ctrl.open then calculated_h = calculated_h + #ctrl.items * 20 end
+                elseif ctrl.type == "separator" then calculated_h = calculated_h + 10
+                elseif ctrl.type == "label" then calculated_h = calculated_h + 20
+                elseif ctrl.type == "layout_start" and ctrl.layout.type == "groupbox" then calculated_h = calculated_h + 25
+                elseif ctrl.type == "layout_end" then calculated_h = calculated_h + 15
+                else calculated_h = calculated_h + 25 end
+            end
         end
         wnd.target_h = wnd.collapsed and 25 or calculated_h
         wnd.current_h = self:lerp(wnd.current_h, wnd.target_h, wnd.animation_speed)
 
-        -- ================================================================
-        -- УЛУЧШЕННАЯ МНОГОСЛОЙНАЯ РАМКА
-        -- ================================================================
-        -- Внешняя темная рамка для эффекта тени
-        render.rect_outline(wnd.x - 1, wnd.y - 1, wnd.w + 2, wnd.current_h + 2, 10, 10, 10, 255, 0, 1)
-        -- Основной фон окна
-        render.rect(wnd.x, wnd.y, wnd.w, wnd.current_h, 25, 25, 25, 255)
-        -- Внутренняя обводка для создания глубины
-        render.rect_outline(wnd.x, wnd.y, wnd.w, wnd.current_h, 60, 60, 60, 255, 0, 1)
-        -- ================================================================
+        render.rect(wnd.x - 1, wnd.y - 1, wnd.w + 2, wnd.current_h + 2, 10, 10, 10, 255)
+        render.rect(wnd.x, wnd.y, wnd.w, wnd.current_h, 45, 45, 45, 255)
+        render.rect(wnd.x + 1, wnd.y + 1, wnd.w - 2, wnd.current_h - 2, 25, 25, 25, 255)
         
-        -- Title bar
         render.rect(wnd.x + 1, wnd.y + 1, wnd.w - 2, 24, 40, 40, 40, 255)
         render.line(wnd.x, wnd.y + 25, wnd.x + wnd.w, wnd.y + 25, 60, 60, 60, 255, 1)
 
@@ -673,27 +582,45 @@ function GUI:draw()
         local arrow_x, arrow_y = wnd.x + 10, wnd.y + 8
         render.triangle(arrow_x, arrow_y + (wnd.collapsed and 0 or 8), arrow_x + (wnd.collapsed and 0 or 8), arrow_y + (wnd.collapsed and 8 or 8), arrow_x + 4, arrow_y + (wnd.collapsed and 4 or 0), 200, 200, 200, 255)
 
-        render.push_clip_rect(wnd.x, wnd.y + 26, wnd.w, wnd.current_h - 26)
-
-        if wnd.current_h > 30 then
+        if not wnd.collapsed then
             local offset_y = wnd.y + 35
-            for _, ctrl in ipairs(wnd.controls) do
-                local ctrl_x, ctrl_w_ = wnd.x + 10, wnd.w - 20
-                if ctrl.type == "keybind" then
-                    if self.input.rmb_clicked and self:is_mouse_in(ctrl_x, offset_y, ctrl_w_, 15) then
-                        if self.active_control then self.active_control.open = false; self.active_control = nil end
-                        for _, c in ipairs(wnd.controls) do if c ~= ctrl and c.context_open then c.context_open = false end end
-                        ctrl.context_open = not ctrl.context_open
+            if #wnd.tabs > 0 then
+                local tab_w = (wnd.w - 2) / #wnd.tabs
+                for i, tab in ipairs(wnd.tabs) do
+                    local tab_x = wnd.x + 1 + (i - 1) * tab_w
+                    if i == wnd.active_tab then
+                        render.rect(tab_x, offset_y, tab_w, 25, 40, 40, 40, 255)
                     end
-                    if ctrl.context_open then keybind_context_to_draw = {ctrl = ctrl, wnd = wnd} end
-                elseif ctrl.type == "colorpicker" and ctrl.open then
-                    colorpicker_to_draw = {ctrl = ctrl, wnd = wnd, y = offset_y + 25}
+                    if self:is_mouse_in(tab_x, offset_y, tab_w, 25) and self.input.lmb_clicked then
+                        wnd.active_tab = i
+                    end
+                    local text_size = render.measure_text(tab.name, 2)
+                    render.text(tab_x + (tab_w - text_size.x) / 2, offset_y + 5, tab.name, i == wnd.active_tab and 255 or 150, i == wnd.active_tab and 255 or 150, i == wnd.active_tab and 255 or 150, 255, "", 2)
                 end
-                offset_y = self:draw_control(wnd, ctrl, offset_y)
+                offset_y = offset_y + 30
             end
-        end
 
-        render.pop_clip_rect()
+            render.push_clip_rect(wnd.x, wnd.y + 26, wnd.w, wnd.current_h - 26)
+
+            if wnd.current_h > 30 and wnd:get_current_tab() then
+                local current_tab = wnd:get_current_tab()
+                for _, ctrl in ipairs(current_tab.controls) do
+                    if ctrl.type == "keybind" then
+                        if self.input.rmb_clicked and self:is_mouse_in(wnd.x + 10, offset_y, wnd.w - 20, 15) then
+                            if self.active_control then self.active_control.open = false; self.active_control = nil end
+                            for _, c in ipairs(current_tab.controls) do if c ~= ctrl and c.context_open then c.context_open = false end end
+                            ctrl.context_open = not ctrl.context_open
+                        end
+                        if ctrl.context_open then keybind_context_to_draw = {ctrl = ctrl, wnd = wnd} end
+                    elseif ctrl.type == "colorpicker" and ctrl.open then
+                        colorpicker_to_draw = {ctrl = ctrl, wnd = wnd, y = offset_y + 25}
+                    end
+                    offset_y = self:draw_control(wnd, ctrl, offset_y)
+                end
+            end
+
+            render.pop_clip_rect()
+        end
         ::continue::
     end
 
@@ -720,18 +647,18 @@ function GUI:draw()
 
     if colorpicker_to_draw then
         local ctrl, wnd, y = colorpicker_to_draw.ctrl, colorpicker_to_draw.wnd, colorpicker_to_draw.y
-        local picker_w, picker_h = 150, 150
+        local picker_w, picker_h = 150, 180
         local picker_x, picker_y = wnd.x + wnd.w + 5, y
         ctrl.popup_x, ctrl.popup_y, ctrl.popup_w, ctrl.popup_h = picker_x, picker_y, picker_w, picker_h
 
-        render.rect(picker_x, picker_y, picker_w, picker_h, 35, 35, 45, 255)
+        render.rect(picker_x, picker_y, picker_w, picker_h, 25, 25, 25, 255)
         render.rect_outline(picker_x, picker_y, picker_w, picker_h, 60, 60, 60, 255, 0, 1)
 
         local palette_x, palette_y = picker_x + 5, picker_y + 5
-        local palette_w, palette_h = picker_w - 30, picker_h - 30
+        local palette_w, palette_h = picker_w - 30, picker_h - 60
         local r_hue, g_hue, b_hue = self:hsv_to_rgb(ctrl.h, 1, 1)
         
-        render.gradient(palette_x, palette_y, palette_w, palette_h, 255, 255, 255, 255, r_hue, g_hue, b_hue, 255, 255, 255, 255, 255, r_hue, g_hue, b_hue, 255)
+        render.gradient(palette_x, palette_y, palette_w, palette_h, 255, 255, 255, 255, r_hue, g_hue, b_hue, 255, r_hue, g_hue, b_hue, 255, 255, 255, 255, 255)
         render.gradient(palette_x, palette_y, palette_w, palette_h, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 0, 0, 0, 255)
 
         local hue_x, hue_y = palette_x + palette_w + 5, palette_y
@@ -751,7 +678,9 @@ function GUI:draw()
                 render.rect(alpha_x + ix, alpha_y + iy, math.min(square_size, alpha_w - ix), math.min(square_size, alpha_h - iy), color[1], color[2], color[3], 255)
             end
         end
-        render.gradient(alpha_x, alpha_y, alpha_w, alpha_h, ctrl.value.r, ctrl.value.g, ctrl.value.b, 0, ctrl.value.r, ctrl.value.g, ctrl.value.b, 255, ctrl.value.r, ctrl.value.g, ctrl.value.b, 0, ctrl.value.r, ctrl.value.g, ctrl.value.b, 255)
+        
+        local r,g,b = ctrl.value.r, ctrl.value.g, ctrl.value.b
+        render.gradient(alpha_x, alpha_y, alpha_w, alpha_h, r,g,b,0, r,g,b,255, r,g,b,255, r,g,b,0)
 
         if self:is_mouse_in(palette_x, palette_y, palette_w, palette_h) and self.input.lmb_pressed then
             self.dragging_control = ctrl.id .. "_sv"
@@ -775,18 +704,65 @@ function GUI:draw()
         local r,g,b = self:hsv_to_rgb(ctrl.h, ctrl.s, ctrl.v)
         ctrl.value.r, ctrl.value.g, ctrl.value.b = r,g,b
 
+        local text_y = alpha_y + alpha_h + 8
+        local rgba_text = string.format("RGBA: %d, %d, %d, %d", math.floor(ctrl.value.r), math.floor(ctrl.value.g), math.floor(ctrl.value.b), ctrl.value.a)
+        local hex_text = string.format("HEX: %s", self:rgb_to_hex(ctrl.value.r, ctrl.value.g, ctrl.value.b))
+        render.text(palette_x, text_y, rgba_text, 200, 200, 200, 255, "", 2)
+        render.text(palette_x, text_y + 15, hex_text, 200, 200, 200, 255, "", 2)
+
         render.circle_outline(palette_x + palette_w * ctrl.s, palette_y + palette_h * (1 - ctrl.v), 5, 255, 255, 255, 255, 1, 12)
         render.rect(hue_x - 1, hue_y + hue_h * ctrl.h - 1, hue_w + 2, 3, 255, 255, 255, 255)
         render.rect(alpha_x + alpha_w * (ctrl.value.a / 255) - 1, alpha_y - 1, 3, alpha_h + 2, 255, 255, 255, 255)
     end
+    
+    local time = globals.curtime()
+    local y_offset = 10
+    for i = #self.notifications, 1, -1 do
+        local notif = self.notifications[i]
+        local elapsed = time - notif.time
+        if elapsed > 5 then notif.target_alpha = 0 end
+        notif.alpha = self:lerp(notif.alpha, notif.target_alpha, 0.1)
+
+        if notif.alpha < 0.01 and notif.target_alpha == 0 then
+            table.remove(self.notifications, i)
+        else
+            local screen_w, screen_h = render.screen_size().x, render.screen_size().y
+            local text_size = render.measure_text(notif.text, 2)
+            local w, h = text_size.x + 20, 30
+            local x = screen_w - w - 10
+            local y = screen_h - h - y_offset
+            
+            render.rect(x, y, w, h, 25, 25, 25, 240 * notif.alpha)
+            render.rect_outline(x, y, w, h, 60, 60, 60, 255 * notif.alpha, 0, 1)
+            render.text(x + 10, y + 8, notif.text, 220, 220, 220, 255 * notif.alpha, "", 2)
+            y_offset = y_offset + h + 10
+        end
+    end
 end
 
 function GUI:draw_control(wnd, ctrl, offset_y)
-    local ctrl_x, ctrl_w = wnd.x + 10, wnd.w - 20
+    local layout = #wnd.layout_stack > 0 and wnd.layout_stack[#wnd.layout_stack] or nil
+    local ctrl_x = wnd.x + 10 + (layout and 10 or 0)
+    local ctrl_w = wnd.w - 20 - (layout and 20 or 0)
+
+    if ctrl.type == "layout_start" then
+        ctrl.layout.start_y = offset_y
+        render.rect_outline(ctrl_x - 5, offset_y, ctrl_w + 10, 100, 60, 60, 60, 255, 0, 1)
+        local text_size = render.measure_text(ctrl.layout.name, 2)
+        render.rect(ctrl_x + 5, offset_y - 8, text_size.x + 10, 16, 25, 25, 25, 255)
+        render.text(ctrl_x + 10, offset_y - 7, ctrl.layout.name, 220, 220, 220, 255, "", 2)
+        return offset_y + 25
+    elseif ctrl.type == "layout_end" then
+        if layout then
+            local group_h = offset_y - layout.start_y
+            render.rect_outline(wnd.x + 15, layout.start_y, wnd.w - 30, group_h, 60, 60, 60, 255, 0, 1)
+        end
+        return offset_y + 15
+    end
 
     if ctrl.type == "checkbox" then
         render.text(ctrl_x, offset_y, ctrl.name, 220, 220, 220, 255, "", 2)
-        local box_x = ctrl_x + wnd.w - 40
+        local box_x = ctrl_x + ctrl_w - 15
         render.rect_outline(box_x, offset_y, 15, 15, 60, 60, 60, 255, 0, 1)
         if ctrl.value then render.rect(box_x + 3, offset_y + 3, 9, 9, 150, 150, 255, 255) end
         if self.input.lmb_clicked and self:is_mouse_in(box_x, offset_y, 15, 15) then ctrl.value = not ctrl.value end
@@ -895,6 +871,14 @@ function GUI:draw_control(wnd, ctrl, offset_y)
         local box_x, box_y, box_w, box_h = ctrl_x, offset_y + 15, ctrl_w, 20
         self:draw_text_field(ctrl, "value", box_x, box_y, box_w, box_h)
         return offset_y + 45
+    
+    elseif ctrl.type == "label" then
+        render.text(ctrl_x, offset_y, ctrl.name, 220, 220, 220, 255, "", 2)
+        return offset_y + 20
+        
+    elseif ctrl.type == "separator" then
+        render.line(ctrl_x, offset_y + 4, ctrl_x + ctrl_w, offset_y + 4, 60, 60, 60, 255, 1)
+        return offset_y + 10
     end
 
     return offset_y
@@ -959,7 +943,4 @@ function GUI:draw_text_field(ctrl, value_field, box_x, box_y, box_w, box_h)
     end
 end
 
---================================================================
--- Return the library table to be used by the loader script
---================================================================
 return GUI
