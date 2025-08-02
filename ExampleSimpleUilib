@@ -1,77 +1,131 @@
---[[
-    ================================================================
-    ==                                                            ==
-    ==                      Simple Lua UI Library                 ==
-    ==                                                            ==
-    ================================================================
+local GUI = nil
 
-    --- QUICKSTART GUIDE ---
+local library_url = "https://your.raw.url.here/guilibrary.lua" 
 
-    This library is designed to be hosted remotely and loaded on demand.
+http.get(library_url, function(library_code, success, headers)
+    if success and library_code then
+        local loaded_ok, lib_or_err = pcall(loadstring(library_code))
+        
+        if loaded_ok and type(lib_or_err) == "table" then
+            GUI = lib_or_err -- Assign the library table itself
+            print("UI Library loaded successfully!")
+        else
+            print("Error executing UI Library code:", lib_or_err)
+        end
+    else
+        print("Failed to download UI Library. Status:", headers and headers.status)
+    end
+end)
 
-    1. HOST THE LIBRARY:
-        Upload this entire file to a raw text hosting service (e.g., GitHub Gist, Pastebin).
-        Make sure you get the "raw" file URL.
+-- This function creates the entire interface after loading the library.
+local function setup_ui()
+    if not GUI then return end
 
-    2. LOAD IN YOUR SCRIPT:
-        Use the following code in your main script to load and initialize the library.
+    -- =================== WINDOW 1: BASIC ELEMENTS ===================
+    local main_window = GUI:new_window("Main Controls", 100, 100, 300)
 
-        EXAMPLE SCRIPT:
-        ----------------------------------------------------------------
-        local GUI = nil
+    -- TAB 1: BASIC ELEMENTS
+    main_window:add_tab("Basic")
+    
+    -- 'add_label' - Just displays the text.
+    main_window:add_label("This is an informational label.")
+    
+    -- 'add_separator' - Horizontal line for separation.
+    main_window:add_separator()
+    
+    -- 'add_checkbox' - Standard checkbox (on/off).
+    local my_checkbox = main_window:add_checkbox("Enable Feature")
+    
+    -- 'add_slider' is a slider for selecting a numeric value.
+    local my_slider = main_window:add_slider("Field of View", 60, 120, 90)
+    
+    -- 'add_button' is a button that performs a function when clicked.
+    main_window:add_button("Show Notification", function() 
+        GUI:add_notification("Button Pressed!") 
+    end)
+    
+    -- `add_keybind' - Key assignment. Used to close the menu.
+    local menu_toggle_key = main_window:add_keybind("Toggle Menu", 0x2D) -- 0x2D = Insert
 
-        http.get("https://raw.githubusercontent.com/StaLLyyyy/SimpleGUI/refs/heads/main/MainUiLib", function(library_code)
-            if library_code then
-                local success, lib = pcall(loadstring(library_code))
-                if success and type(lib) == "table" then
-                    GUI = lib
-                    -- Library loaded. You can now create your windows.
-                    
-                    -- Example Window 1:
-                    local main_window = GUI:new_window("Main Menu", 100, 100, 250)
-                    local esp_enabled = main_window:add_checkbox("Enable ESP")
-                    local fov_slider = main_window:add_slider("FOV", 60, 120, 90)
-                    
-                    -- Example Window 2:
-                    local visuals_window = GUI:new_window("Visuals", 400, 100, 250)
-                    visuals_window:add_textinput("Watermark", "My Script")
+    -- TAB 2: INPUT AND SELECTION
+    main_window:add_tab("Inputs")
+    
+    -- `add_dropdown` is a drop-down list with one choice.
+    main_window:add_dropdown("Select Mode", {"Option 1", "Option 2", "Option 3"})
+    
+    -- `add_multiselect` is a drop-down list with multiple selections.
+    main_window:add_multiselect("Select Flags", {"Flag A", "Flag B", "Flag C"})
+    
+    main_window:add_separator()
+    
+    -- 'add_textinput' is a text input field.
+    main_window:add_textinput("Watermark", "My Script")
+    
+    -- 'add_colorpicker' - Palette for color selection.
+    main_window:add_colorpicker("ESP Color", {255, 0, 0, 255})
+    
+    -- =================== WINDOW 2: LAYOUT ===================
+    local layout_window = GUI:new_window("Layout Demo", 450, 100, 400)
+    
+    layout_window:add_tab("Layout Demo")
+    
+    -- `begin_groupbox` / `end_groupbox' - Creates a container with a header.
+    layout_window:begin_groupbox("Groupbox Example")
+        layout_window:add_label("Controls inside a groupbox.")
+        layout_window:add_checkbox("Grouped Checkbox")
+    layout_window:end_groupbox()
+    
+    layout_window:begin_groupbox("Columns Example")
+-- `begin_columns` / `end_columns' - Divides the area into columns.
+        layout_window:begin_columns(2)
+        
+        -- Column 1
+        layout_window:add_label("Column 1")
+        layout_window:add_checkbox("Checkbox A")
+        layout_window:add_slider("Slider A", 0, 100, 25)
+        
+        -- `next_column' - Moves to the next column.
+        layout_window:next_column()
+        
+        -- Column 2
+        layout_window:add_label("Column 2")
+        layout_window:add_checkbox("Checkbox B")
+        layout_window:add_slider("Slider B", 0, 100, 75)
+        
+        layout_window:end_columns()
+    layout_window:end_groupbox()
+    
+    -- We return the keybind element to use it to close the menu.
+    return menu_toggle_key
+end
 
-                else
-                    print("Failed to load UI Library:", lib) -- lib contains the error
-                end
-            else
-                print("Failed to fetch UI Library code.")
+local menu_toggle_key = nil
+local menu_open = true
+
+cheat.set_callback("paint", function()
+-- Waiting until the library is fully loaded.
+    if not GUI then return end
+    
+    -- We create the interface in the first frame after loading.
+    if not menu_toggle_key then
+        menu_toggle_key = setup_ui()
+    end
+
+    -- Logic for opening/closing the menu using the assigned key.
+    if GUI:is_keybind_active(menu_toggle_key) then
+        -- This check is necessary so that the menu switches only once per click.
+        if not menu_toggle_key.was_pressed then
+            menu_open = not menu_open
+            for _, wnd in ipairs(GUI.windows) do
+                wnd.open = menu_open
             end
-        end)
+            menu_toggle_key.was_pressed = true
+        end
+    else
+        menu_toggle_key.was_pressed = false
+    end
 
-        local menu_toggle_key = 0x2D -- INSERT Key
-        local last_toggle_state = false
-
-        cheat.set_callback("paint", function()
-            if not GUI then return end -- Wait until library is loaded
-
-            -- Toggle menu visibility with your key
-            local key_state = utils.key_state(menu_toggle_key)
-            if key_state and not last_toggle_state then
-                for _, wnd in ipairs(GUI.windows) do
-                    wnd.open = not wnd.open
-                end
-            end
-            last_toggle_state = key_state
-
-            -- These two functions must be called every frame
-            GUI:update_keybinds()
-            GUI:draw()
-        end)
-        ----------------------------------------------------------------
-
-    Available Controls:
-    - window:add_checkbox("Name")
-    - window:add_slider("Name", min, max, default)
-    - window:add_button("Name", callback_function)
-    - window:add_keybind("Name", default_virtual_key)
-    - window:add_dropdown("Name", {"Item1", "Item2"})
-    - window:add_multiselect("Name", {"Item1", "Item2"})
-    - window:add_textinput("Name", "Default Text")
-    - window:add_colorpicker("Name", {r, g, b, a}) -- Values from 0-255
-]]
+    -- These two functions must be called every frame.
+    GUI:update_keybinds()
+    GUI:draw()
+end)
